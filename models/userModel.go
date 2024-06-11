@@ -9,3 +9,8 @@ type User struct {
 	Password    string `json:"password" gorm:"column:password" validate:"required"`
 	PhoneNumber string `json:"phoneNumber" gorm:"column:phoneNumber" validate:"required"`
 }
+
+type UserLogin struct {
+	Email    string `json:"email" gorm:"column:email" validate:"required"`
+	Password string `json:"password" gorm:"column:password" validate:"required"`
+}
