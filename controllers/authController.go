@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	orm "example/backend/config"
+	database "example/backend/database"
 	helper "example/backend/helpers"
 	"example/backend/models"
 )
@@ -26,14 +26,14 @@ func Signup() gin.HandlerFunc {
 		}
 
 		// Check if email already exists
-		emailAlreadyExists := orm.DB().Where("email = ?", user.Email).First(&user).Error
+		emailAlreadyExists := database.MysqlDB().Where("email = ?", user.Email).First(&user).Error
 		if emailAlreadyExists == nil {
 			c.JSON(400, gin.H{"error": "Email already exists"})
 			return
 		}
 
 		// Check if phone number already exists
-		phoneAlreadyExists := orm.DB().Where("phoneNumber = ?", user.PhoneNumber).First(&user).Error
+		phoneAlreadyExists := database.MysqlDB().Where("phoneNumber = ?", user.PhoneNumber).First(&user).Error
 		if phoneAlreadyExists == nil {
 			c.JSON(400, gin.H{"error": "Phone number already exists"})
 			return
@@ -42,7 +42,7 @@ func Signup() gin.HandlerFunc {
 		// Generate a unique user ID
 		for {
 			user.UserId = helper.GenerateUserId()
-			if err := orm.DB().Where("userId = ?", user.UserId).First(&user).Error; err != nil {
+			if err := database.MysqlDB().Where("userId = ?", user.UserId).First(&user).Error; err != nil {
 				break // No user found with this ID, so it's unique
 			}
 		}
@@ -56,7 +56,7 @@ func Signup() gin.HandlerFunc {
 		user.Password = string(hashedPassword)
 
 		// save the user
-		dbErr := orm.DB().Create(&user).Error
+		dbErr := database.MysqlDB().Create(&user).Error
 		if dbErr != nil {
 			c.JSON(500, gin.H{"error": "Failed to signup"})
 			return
@@ -98,7 +98,7 @@ func Login() gin.HandlerFunc {
 
 		// Check if email exists
 		var user models.User
-		emailExists := orm.DB().Where("email = ?", userLogin.Email).First(&user).Error
+		emailExists := database.MysqlDB().Where("email = ?", userLogin.Email).First(&user).Error
 		if emailExists != nil {
 			c.JSON(400, gin.H{"error": "email not found"})
 			return

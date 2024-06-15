@@ -9,4 +9,5 @@ import (
 
 func UserRoutes(router *gin.Engine) {
 	router.GET("/user/info", middleware.Authenticate(), controllers.GetUser())
+	router.GET("/user/character", middleware.Authenticate(), controllers.GetCharacter())
 }
