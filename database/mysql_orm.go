@@ -1,4 +1,4 @@
-package orm
+package database
 
 import (
 	"example/backend/models"
@@ -13,7 +13,7 @@ import (
 var db *gorm.DB
 
 // InitDB initializes the database connection
-func InitDB() {
+func InitMySQL() {
 	var err error
 
 	username := os.Getenv("MYSQL_USERNAME")
@@ -34,6 +34,6 @@ func InitDB() {
 }
 
 // GetDB returns the database connection
-func DB() *gorm.DB {
+func MysqlDB() *gorm.DB {
 	return db
 }

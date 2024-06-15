@@ -1,7 +1,7 @@
 package main
 
 import (
-	orm "example/backend/config"
+	database "example/backend/database"
 	routes "example/backend/routes"
 	"os"
 
@@ -22,13 +22,17 @@ func main() {
 	}
 
 	// Initialize the database
-	orm.InitDB()
+	database.InitMySQL()
+	database.InitMongoDB()
 
+	// Create a new Gin router
 	router := gin.New()
 	router.Use(gin.Logger())
 
+	// Define the routes
 	routes.UserRoutes(router)
 	routes.AuthRoutes(router)
 
+	// Run the server
 	router.Run("localhost:" + port)
 }

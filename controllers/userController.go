@@ -10,7 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	orm "example/backend/config"
+	database "example/backend/database"
 	"example/backend/models"
 )
 
@@ -24,7 +24,7 @@ func GetUser() gin.HandlerFunc {
 		}
 
 		var user models.User
-		dbErr := orm.DB().Where("userId = ?", userId).First(&user).Error
+		dbErr := database.MysqlDB().Where("userId = ?", userId).First(&user).Error
 
 		if dbErr != nil {
 			c.JSON(404, gin.H{"error": "User not found!"})
