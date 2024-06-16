@@ -6,11 +6,12 @@ type User struct {
 	FirstName   string `json:"firstName" gorm:"column:firstName" validate:"required"`
 	LastName    string `json:"lastName" gorm:"column:lastName" validate:"required"`
 	Email       string `json:"email" gorm:"column:email" validate:"required"`
+	Username    string `json:"username" gorm:"column:username" validate:"required"`
 	Password    string `json:"password" gorm:"column:password" validate:"required"`
 	PhoneNumber string `json:"phoneNumber" gorm:"column:phoneNumber" validate:"required"`
 }
 
 type UserLogin struct {
-	Email    string `json:"email" gorm:"column:email" validate:"required"`
+	Username string `json:"username" gorm:"column:username" validate:"required"`
 	Password string `json:"password" gorm:"column:password" validate:"required"`
 }

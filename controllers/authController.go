@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -21,15 +20,15 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	// Validate user input
-	validationError := helper.ValidateSignupInput(user.FirstName, user.LastName, user.Email, user.Password, user.PhoneNumber)
+	validationError := helper.ValidateSignupInput(user.FirstName, user.LastName, user.Email, user.Username, user.Password, user.PhoneNumber)
 	if validationError != "" {
 		return c.Status(400).JSON(fiber.Map{"error": validationError})
 	}
 
-	// Check if email already exists
-	emailAlreadyExists := database.MysqlDB().Where("email = ?", user.Email).First(&user).Error
-	if emailAlreadyExists == nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Email already exists"})
+	// Check if username already exists
+	usernameAlreadyExists := database.MysqlDB().Where("username = ?", user.Username).First(&user).Error
+	if usernameAlreadyExists == nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Username already exists"})
 	}
 
 	// Check if phone number already exists
@@ -88,18 +87,17 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// Validate user input
-	validationError := helper.ValidateLoginInput(userLogin.Email, userLogin.Password)
+	validationError := helper.ValidateLoginInput(userLogin.Username, userLogin.Password)
 	if validationError != "" {
 		return c.Status(400).JSON(fiber.Map{"error": validationError})
 	}
 
 	// Check if email exists
 	var user models.User
-	emailExists := database.MysqlDB().Where("email = ?", userLogin.Email).First(&user).Error
-	if emailExists != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Email not found"})
+	usernameExists := database.MysqlDB().Where("username = ?", userLogin.Username).First(&user).Error
+	if usernameExists != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Username not found"})
 	}
-	fmt.Println(user.Password)
 
 	// Compare the provided password with the stored hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userLogin.Password)); err != nil {

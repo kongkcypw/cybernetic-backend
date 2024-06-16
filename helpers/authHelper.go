@@ -11,7 +11,7 @@ func GenerateUserId() string {
 	return fmt.Sprintf("u%09d", randomNumber)
 }
 
-func ValidateSignupInput(firstName, lastName, email, password, phoneNumber string) string {
+func ValidateSignupInput(firstName, lastName, email, username, password, phoneNumber string) string {
 
 	// Validate first name
 	if firstName == "" {
@@ -29,6 +29,10 @@ func ValidateSignupInput(firstName, lastName, email, password, phoneNumber strin
 		return "Invalid email address"
 	}
 
+	if username == "" {
+		return "Username is required"
+	}
+
 	// Validate password
 	if len(password) < 8 {
 		return "Password must be at least 8 characters long"
@@ -43,11 +47,10 @@ func ValidateSignupInput(firstName, lastName, email, password, phoneNumber strin
 	return ""
 }
 
-func ValidateLoginInput(email, password string) string {
+func ValidateLoginInput(username, password string) string {
 	// Validate email
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if !emailRegex.MatchString(email) {
-		return "Invalid email address"
+	if username == "" {
+		return "Username is required"
 	}
 
 	// Validate password

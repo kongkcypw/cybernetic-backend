@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
@@ -32,6 +33,14 @@ func main() {
 
 	// Use the logger middleware
 	app.Use(logger.New())
+
+	// Initialize cors config
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "https://gofiber.io, https://gofiber.net, http://localhost:5173",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+	}))
 
 	// Define the routes
 	routes.UserRoutes(app)
