@@ -7,8 +7,10 @@ import (
 
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
@@ -25,14 +27,16 @@ func main() {
 	database.InitMySQL()
 	database.InitMongoDB()
 
-	// Create a new Gin router
-	router := gin.New()
-	router.Use(gin.Logger())
+	// Create a new Fiber app
+	app := fiber.New()
+
+	// Use the logger middleware
+	app.Use(logger.New())
 
 	// Define the routes
-	routes.UserRoutes(router)
-	routes.AuthRoutes(router)
+	routes.UserRoutes(app)
+	routes.AuthRoutes(app)
 
 	// Run the server
-	router.Run("localhost:" + port)
+	app.Listen(":" + port)
 }

@@ -6,41 +6,42 @@ import (
 	// "strconv"
 	"context"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 
 	database "example/backend/database"
 	"example/backend/models"
 )
 
-func GetCharacter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userId := c.Query("userId")
+func GetCharacter(c *fiber.Ctx) error {
+	userId := c.Query("userId")
 
-		if userId == "" {
-			c.JSON(400, gin.H{"error": "userId is required"})
-			return
-		}
-
-		client := database.MongoDB()
-		if client == nil {
-			c.JSON(500, gin.H{"error": "Database connection is not initialized"})
-			return
-		}
-
-		collection := client.Database("cybernatic").Collection("user_character")
-		if collection == nil {
-			c.JSON(404, gin.H{"error": "Character not found!"})
-			return
-		}
-
-		var character models.Character
-		err := collection.FindOne(context.Background(), bson.M{"userId": userId}).Decode(&character)
-		if err != nil {
-			c.JSON(404, gin.H{"error": "Character not found!"})
-			return
-		}
-
-		c.JSON(200, character)
+	if userId == "" {
+		c.Status(400).JSON(fiber.Map{
+			"error": "userId is required",
+		})
+		return fiber.NewError(400, "userId is required")
 	}
+
+	client := database.MongoDB()
+	if client == nil {
+		c.Status(500).JSON(fiber.Map{
+			"error": "Database connection is not initialized",
+		})
+		return fiber.NewError(500, "Database connection is not initialized")
+	}
+
+	collection := database.MongoDBOpenCollection(client, "cybernetic", "user_character")
+
+	var character models.Character
+	err := collection.FindOne(context.Background(), bson.M{"userId": userId}).Decode(&character)
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{
+			"error": "Character not found!",
+		})
+		return fiber.NewError(404, "Character not found!")
+	}
+
+	c.Status(200).JSON(fiber.Map{"character": character})
+	return nil
 }

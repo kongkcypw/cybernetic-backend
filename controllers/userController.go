@@ -8,28 +8,31 @@ import (
 	// "time"
 	// "fmt"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 
 	database "example/backend/database"
 	"example/backend/models"
 )
 
-func GetUser() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userId := c.Query("userId")
+func GetUser(c *fiber.Ctx) error {
+	userId := c.Query("userId")
 
-		if userId == "" {
-			c.JSON(400, gin.H{"error": "userId is required"})
-			return
-		}
-
-		var user models.User
-		dbErr := database.MysqlDB().Where("userId = ?", userId).First(&user).Error
-
-		if dbErr != nil {
-			c.JSON(404, gin.H{"error": "User not found!"})
-			return
-		}
-		c.JSON(200, user)
+	if userId == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "userId is required",
+		})
 	}
+
+	var user models.User
+	dbErr := database.MysqlDB().Where("userId = ?", userId).First(&user).Error
+
+	if dbErr != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "User not found!",
+		})
+	}
+
+	c.Status(200).JSON(fiber.Map{"user": user})
+
+	return nil
 }

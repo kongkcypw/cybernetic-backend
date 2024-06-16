@@ -3,11 +3,11 @@ package routes
 import (
 	controllers "example/backend/controllers"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
-func AuthRoutes(router *gin.Engine) {
-	router.POST("/auth/signup", controllers.Signup())
-	router.POST("/auth/login", controllers.Login())
-	router.GET("/auth/logout", controllers.Logout())
+func AuthRoutes(router *fiber.App) {
+	router.Post("/auth/signup", controllers.Signup)
+	router.Post("/auth/login", controllers.Login)
+	router.Get("/auth/logout", controllers.Logout)
 }
