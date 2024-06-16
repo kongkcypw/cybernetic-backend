@@ -43,7 +43,7 @@ func MongoDB() *mongo.Client {
 	return Client
 }
 
-// func OpenCollection(client *mongo.Client, databaseName, collectionName string) *mongo.Collection {
-// 	var collection *mongo.Collection = client.Database(databaseName).Collection(collectionName)
-// 	return collection
-// }
+func MongoDBOpenCollection(client *mongo.Client, databaseName string, collectionName string) *mongo.Collection {
+	var collection *mongo.Collection = client.Database(databaseName).Collection(collectionName)
+	return collection
+}
