@@ -1,12 +1,15 @@
 package controllers
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
 	database "example/backend/database"
 	helper "example/backend/helpers"
@@ -136,4 +139,52 @@ func Logout(c *fiber.Ctx) error {
 		HTTPOnly: true,
 	})
 	return c.Status(200).JSON(fiber.Map{"message": "Logged out successfully"})
+}
+
+var googleOauthConfig = &oauth2.Config{
+	ClientID:     os.Getenv("GCP_CLIENT_ID"),
+	ClientSecret: os.Getenv("GCP_CLIENT_SECRET"),
+	RedirectURL:  os.Getenv("GCP_OAUTH_REDIRECT_URL"),
+	Scopes:       []string{"profile", "email", "openid"},
+	Endpoint:     google.Endpoint,
+}
+
+func GoogleLogin(c *fiber.Ctx) error {
+	url := googleOauthConfig.AuthCodeURL("state")
+	return c.Redirect(url)
+}
+
+func GoogleCallback(c *fiber.Ctx) error {
+	fmt.Println("ClientID:", os.Getenv("GCP_CLIENT_ID"))
+	fmt.Println("ClientSecret:", os.Getenv("GCP_CLIENT_SECRET"))
+	fmt.Println("RedirectURL:", os.Getenv("GCP_OAUTH_REDIRECT_URL"))
+	fmt.Println("Endpoint:", google.Endpoint)
+
+	code := c.Query("code")
+	fmt.Println("code:", code)
+	if code == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid code"})
+	}
+
+	googleOauthConfig.ClientID = os.Getenv("GCP_CLIENT_ID")
+	googleOauthConfig.ClientSecret = os.Getenv("GCP_CLIENT_SECRET")
+	googleOauthConfig.RedirectURL = os.Getenv("GCP_OAUTH_REDIRECT_URL")
+
+	token, err := googleOauthConfig.Exchange(c.Context(), code)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to exchange token", "details": err.Error()})
+	}
+
+	userInfo, err := helper.GetUserInfoFromGoogleOauthToken(token.AccessToken)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to get user info"})
+	}
+
+	// authToken, _, generateTokenErr := helper.GenerateJWT(userInfo.given_name, userInfo.FirstName, userInfo.LastName, userInfo.Email, userInfo.PhoneNumber)
+	// if generateTokenErr != nil {
+	// 	return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
+	// }
+
+	return c.Status(200).JSON(fiber.Map{"profile": userInfo})
+	// return c.Status(200).JSON(fiber.Map{"message": "Google callback"})
 }
