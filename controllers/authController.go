@@ -11,6 +11,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	config "example/backend/config"
 	database "example/backend/database"
 	helper "example/backend/helpers"
 	"example/backend/models"
@@ -67,17 +68,12 @@ func Signup(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
 	}
 
-	// Set the JWT token in a cookie
-	tokenExpired, _ := strconv.Atoi(os.Getenv("JWT_TOKEN_EXPIRED"))
-	c.Cookie(&fiber.Cookie{
-		Name:     "authToken",
-		Value:    authToken,
-		Expires:  time.Now().Add(time.Duration(tokenExpired) * time.Second),
-		Path:     "/",
-		Domain:   os.Getenv("SERVER_ENV"),
-		Secure:   false,
-		HTTPOnly: true,
-	})
+	// Set token expiration
+	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
+	authTokenDuration := time.Duration(authTokenExpired*24) * time.Hour
+	// Config and set cookie
+	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
+	c.Cookie(&cookie)
 
 	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
 }
@@ -113,18 +109,12 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
 	}
 
-	// Set the JWT token in a cookie
-	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_TOKEN_EXPIRED"))
-	c.Cookie(&fiber.Cookie{
-		Name:     "authToken",
-		Value:    authToken,
-		Expires:  time.Now().Add(time.Duration(authTokenExpired) * time.Second),
-		Path:     "/",
-		Domain:   os.Getenv("SERVER_ENV"),
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
+	// Set token expiration
+	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
+	authTokenDuration := time.Duration(authTokenExpired*24) * time.Hour
+	// Config and set cookie
+	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
+	c.Cookie(&cookie)
 	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
 }
 
