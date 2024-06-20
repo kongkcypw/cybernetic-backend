@@ -8,7 +8,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
+	config "example/backend/config"
 	database "example/backend/database"
 	helper "example/backend/helpers"
 	"example/backend/models"
@@ -21,15 +24,15 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	// Validate user input
-	validationError := helper.ValidateSignupInput(user.FirstName, user.LastName, user.Email, user.Password, user.PhoneNumber)
+	validationError := helper.ValidateSignupInput(user.FirstName, user.LastName, user.Email, user.Username, user.Password, user.PhoneNumber)
 	if validationError != "" {
 		return c.Status(400).JSON(fiber.Map{"error": validationError})
 	}
 
-	// Check if email already exists
-	emailAlreadyExists := database.MysqlDB().Where("email = ?", user.Email).First(&user).Error
-	if emailAlreadyExists == nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Email already exists"})
+	// Check if username already exists
+	usernameAlreadyExists := database.MysqlDB().Where("username = ?", user.Username).First(&user).Error
+	if usernameAlreadyExists == nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Username already exists"})
 	}
 
 	// Check if phone number already exists
@@ -65,17 +68,12 @@ func Signup(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
 	}
 
-	// Set the JWT token in a cookie
-	tokenExpired, _ := strconv.Atoi(os.Getenv("JWT_TOKEN_EXPIRED"))
-	c.Cookie(&fiber.Cookie{
-		Name:     "authToken",
-		Value:    authToken,
-		Expires:  time.Now().Add(time.Duration(tokenExpired) * time.Second),
-		Path:     "/",
-		Domain:   os.Getenv("SERVER_ENV"),
-		Secure:   false,
-		HTTPOnly: true,
-	})
+	// Set token expiration
+	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
+	authTokenDuration := time.Duration(authTokenExpired*24) * time.Hour
+	// Config and set cookie
+	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
+	c.Cookie(&cookie)
 
 	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
 }
@@ -88,18 +86,17 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// Validate user input
-	validationError := helper.ValidateLoginInput(userLogin.Email, userLogin.Password)
+	validationError := helper.ValidateLoginInput(userLogin.Username, userLogin.Password)
 	if validationError != "" {
 		return c.Status(400).JSON(fiber.Map{"error": validationError})
 	}
 
 	// Check if email exists
 	var user models.User
-	emailExists := database.MysqlDB().Where("email = ?", userLogin.Email).First(&user).Error
-	if emailExists != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "Email not found"})
+	usernameExists := database.MysqlDB().Where("username = ?", userLogin.Username).First(&user).Error
+	if usernameExists != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Username not found"})
 	}
-	fmt.Println(user.Password)
 
 	// Compare the provided password with the stored hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userLogin.Password)); err != nil {
@@ -112,18 +109,12 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
 	}
 
-	// Set the JWT token in a cookie
-	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_TOKEN_EXPIRED"))
-	c.Cookie(&fiber.Cookie{
-		Name:     "authToken",
-		Value:    authToken,
-		Expires:  time.Now().Add(time.Duration(authTokenExpired) * time.Second),
-		Path:     "/",
-		Domain:   os.Getenv("SERVER_ENV"),
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
+	// Set token expiration
+	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
+	authTokenDuration := time.Duration(authTokenExpired*24) * time.Hour
+	// Config and set cookie
+	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
+	c.Cookie(&cookie)
 	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
 }
 
@@ -138,4 +129,52 @@ func Logout(c *fiber.Ctx) error {
 		HTTPOnly: true,
 	})
 	return c.Status(200).JSON(fiber.Map{"message": "Logged out successfully"})
+}
+
+var googleOauthConfig = &oauth2.Config{
+	ClientID:     os.Getenv("GCP_CLIENT_ID"),
+	ClientSecret: os.Getenv("GCP_CLIENT_SECRET"),
+	RedirectURL:  os.Getenv("GCP_OAUTH_REDIRECT_URL"),
+	Scopes:       []string{"profile", "email", "openid"},
+	Endpoint:     google.Endpoint,
+}
+
+func GoogleLogin(c *fiber.Ctx) error {
+	url := googleOauthConfig.AuthCodeURL("state")
+	return c.Redirect(url)
+}
+
+func GoogleCallback(c *fiber.Ctx) error {
+	fmt.Println("ClientID:", os.Getenv("GCP_CLIENT_ID"))
+	fmt.Println("ClientSecret:", os.Getenv("GCP_CLIENT_SECRET"))
+	fmt.Println("RedirectURL:", os.Getenv("GCP_OAUTH_REDIRECT_URL"))
+	fmt.Println("Endpoint:", google.Endpoint)
+
+	code := c.Query("code")
+	fmt.Println("code:", code)
+	if code == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid code"})
+	}
+
+	googleOauthConfig.ClientID = os.Getenv("GCP_CLIENT_ID")
+	googleOauthConfig.ClientSecret = os.Getenv("GCP_CLIENT_SECRET")
+	googleOauthConfig.RedirectURL = os.Getenv("GCP_OAUTH_REDIRECT_URL")
+
+	token, err := googleOauthConfig.Exchange(c.Context(), code)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to exchange token", "details": err.Error()})
+	}
+
+	userInfo, err := helper.GetUserInfoFromGoogleOauthToken(token.AccessToken)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to get user info"})
+	}
+
+	// authToken, _, generateTokenErr := helper.GenerateJWT(userInfo.given_name, userInfo.FirstName, userInfo.LastName, userInfo.Email, userInfo.PhoneNumber)
+	// if generateTokenErr != nil {
+	// 	return c.Status(500).JSON(fiber.Map{"error": generateTokenErr.Error()})
+	// }
+
+	return c.Status(200).JSON(fiber.Map{"profile": userInfo})
+	// return c.Status(200).JSON(fiber.Map{"message": "Google callback"})
 }
