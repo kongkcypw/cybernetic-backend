@@ -9,15 +9,12 @@ import (
 )
 
 type TokenClaims struct {
-	UserId      string
-	FirstName   string
-	LastName    string
-	Email       string
-	PhoneNumber string
+	UserId string
+	Email  string
 	jwt.StandardClaims
 }
 
-func GenerateJWT(userId string, firstName string, lastName string, email string, phoneNumber string) (string, string, error) {
+func GenerateJWT(userId string, email string) (string, string, error) {
 
 	// Set Expired time
 	authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
@@ -25,21 +22,15 @@ func GenerateJWT(userId string, firstName string, lastName string, email string,
 
 	// Set the token claims
 	claims := &TokenClaims{
-		UserId:      userId,
-		FirstName:   firstName,
-		LastName:    lastName,
-		Email:       email,
-		PhoneNumber: phoneNumber,
+		UserId: userId,
+		Email:  email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: int64(authTokenExpired),
 		},
 	}
 	refreshClaims := &TokenClaims{
-		UserId:      userId,
-		FirstName:   firstName,
-		LastName:    lastName,
-		Email:       email,
-		PhoneNumber: phoneNumber,
+		UserId: userId,
+		Email:  email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: int64(refreshTokenExpired),
 		},

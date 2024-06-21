@@ -13,17 +13,7 @@ func GenerateUserId() string {
 	return fmt.Sprintf("u%09d", randomNumber)
 }
 
-func ValidateSignupInput(firstName, lastName, email, username, password, phoneNumber string) string {
-
-	// Validate first name
-	if firstName == "" {
-		return "First name is required"
-	}
-
-	// Validate last name
-	if lastName == "" {
-		return "Last name is required"
-	}
+func ValidateSignupInput(email, username, password string) string {
 
 	// Validate email
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
@@ -38,12 +28,6 @@ func ValidateSignupInput(firstName, lastName, email, username, password, phoneNu
 	// Validate password
 	if len(password) < 8 {
 		return "Password must be at least 8 characters long"
-	}
-
-	// Validate phone number
-	phoneNumberRegex := regexp.MustCompile(`^\d{10}$`)
-	if !phoneNumberRegex.MatchString(phoneNumber) {
-		return "Invalid phone number"
 	}
 
 	return ""
@@ -67,7 +51,7 @@ type GoogleProfile struct {
 	Email string `json:"email"`
 }
 
-func GetUserInfoFromGoogleOauthToken(accessToken string) (map[string]interface{}, error) {
+func GetUserInfoFromGoogleOauthToken(accessToken string) (*GoogleProfile, error) {
 	userInfoEndpoint := "https://www.googleapis.com/oauth2/v2/userinfo"
 
 	req, err := http.NewRequest("GET", userInfoEndpoint, nil)
@@ -88,10 +72,10 @@ func GetUserInfoFromGoogleOauthToken(accessToken string) (map[string]interface{}
 
 	// Parse response body
 	// var userInfo map[string]interface{}
-	var userInfo map[string]interface{}
+	var userInfo GoogleProfile
 	if err := json.NewDecoder(res.Body).Decode(&userInfo); err != nil {
 		return nil, err
 	}
 
-	return userInfo, nil
+	return &userInfo, nil
 }
