@@ -74,7 +74,7 @@ func Signup(c *fiber.Ctx) error {
 	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
 	c.Cookie(&cookie)
 
-	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
+	return c.Status(200).JSON(fiber.Map{"userId": user.UserId, "email": user.Email})
 }
 
 func Login(c *fiber.Ctx) error {
@@ -114,7 +114,7 @@ func Login(c *fiber.Ctx) error {
 	// Config and set cookie
 	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
 	c.Cookie(&cookie)
-	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
+	return c.Status(200).JSON(fiber.Map{"userId": user.UserId, "email": user.Email})
 }
 
 func Logout(c *fiber.Ctx) error {
@@ -167,7 +167,7 @@ func SignupWithGoogle(c *fiber.Ctx) error {
 	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
 	c.Cookie(&cookie)
 
-	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
+	return c.Status(200).JSON(fiber.Map{"userId": user.UserId, "email": user.Email})
 }
 
 func LoginWithGoogle(c *fiber.Ctx) error {
@@ -193,5 +193,5 @@ func LoginWithGoogle(c *fiber.Ctx) error {
 	// Config and set cookie
 	cookie := config.CreateCookieWithConfig("authToken", authToken, authTokenDuration)
 	c.Cookie(&cookie)
-	return c.Status(200).JSON(fiber.Map{"userId": user.UserId})
+	return c.Status(200).JSON(fiber.Map{"userId": user.UserId, "email": user.Email})
 }

@@ -14,6 +14,14 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
+// MessageObject Basic chat message object
+type MessageObject struct {
+	Data  string `json:"data"`
+	From  string `json:"from"`
+	Event string `json:"event"`
+	To    string `json:"to"`
+}
+
 func main() {
 	// Load the .env file
 	err := godotenv.Load()
@@ -45,6 +53,7 @@ func main() {
 	// Define the routes
 	routes.UserRoutes(app)
 	routes.AuthRoutes(app)
+	routes.SocketRoute(app)
 
 	// Run the server
 	app.Listen(":" + port)
