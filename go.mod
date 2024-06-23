@@ -11,6 +11,7 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/fasthttp/websocket v1.5.9 // indirect
+	github.com/gofiber/adaptor/v2 v2.2.1 // indirect
 	github.com/gofiber/contrib/websocket v1.3.1 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gomodule/redigo v1.8.4 // indirect
