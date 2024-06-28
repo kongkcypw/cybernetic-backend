@@ -4,14 +4,14 @@ import (
 	controllers "example/backend/controllers"
 	middleware "example/backend/middleware"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 )
 
-func AuthRoutes(router *fiber.App) {
-	router.Post("/auth/signup", controllers.Signup)
-	router.Post("/auth/login", controllers.Login)
-	router.Get("/auth/logout", controllers.Logout)
+func AuthRoutes(router *gin.Engine) {
+	router.POST("/auth/signup", controllers.Signup())
+	router.POST("/auth/login", controllers.Login())
+	router.GET("/auth/logout", controllers.Logout())
 	// Google OAuth
-	router.Get("/auth/google/signup", middleware.GoogleCallback, controllers.SignupWithGoogle)
-	router.Get("/auth/google/login", middleware.GoogleCallback, controllers.LoginWithGoogle)
+	router.GET("/auth/google/signup", middleware.GoogleCallback(), controllers.SignupWithGoogle())
+	router.GET("/auth/google/login", middleware.GoogleCallback(), controllers.LoginWithGoogle())
 }
