@@ -4,10 +4,10 @@ import (
 	controllers "example/backend/controllers"
 	"example/backend/middleware"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(router *fiber.App) {
-	router.Get("/user/info", middleware.Authenticate, controllers.GetUser)
-	router.Get("/user/character", middleware.Authenticate, controllers.GetCharacter)
+func UserRoutes(router *gin.Engine) {
+	router.GET("/user/info", middleware.Authenticate(), controllers.GetUser())
+	router.GET("/user/character", middleware.Authenticate(), controllers.GetCharacter())
 }
