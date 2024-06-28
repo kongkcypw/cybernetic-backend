@@ -47,6 +47,18 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(GinMiddleware("http://localhost:5173"))
 
+	// Socket.io server
+	socketServer := routes.SocketServerRoute()
+	go func() {
+		if err := socketServer.Serve(); err != nil {
+			log.Fatalf("socketio listen error: %s\n", err)
+		}
+	}()
+	defer socketServer.Close()
+	router.GET("/socket.io/*any", gin.WrapH(socketServer))
+	router.POST("/socket.io/*any", gin.WrapH(socketServer))
+
+	// Register the routes
 	routes.UserRoutes(router)
 	routes.AuthRoutes(router)
 
