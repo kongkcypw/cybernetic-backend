@@ -41,6 +41,7 @@ func main() {
 	// Initialize the database
 	database.InitMySQL()
 	database.InitMongoDB()
+	database.InitFirebase()
 
 	// Create a new Gin router
 	router := gin.New()
@@ -61,6 +62,7 @@ func main() {
 	// Register the routes
 	routes.UserRoutes(router)
 	routes.AuthRoutes(router)
+	routes.TestRoute(router)
 
 	if err := router.Run(":" + port); // router.Run("localhost:" + port)
 	err != nil {
