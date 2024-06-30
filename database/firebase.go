@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -81,6 +82,37 @@ func GetFileFromBucket(bucketName, filePath, destPath string) error {
 
 	if err := ioutil.WriteFile(destPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write data to file: %v", err)
+	}
+
+	return nil
+}
+
+// UploadFileToBucket uploads a file to Firebase Storage
+func UploadFileToBucket(bucketName, srcPath, destPath string) error {
+	ctx := context.Background()
+	client, err := FirebaseApp.Storage(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create storage client: %v", err)
+	}
+
+	bucket, err := client.Bucket(bucketName)
+	if err != nil {
+		return fmt.Errorf("failed to get bucket: %v", err)
+	}
+
+	f, err := os.Open(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer f.Close()
+
+	object := bucket.Object(destPath)
+	w := object.NewWriter(ctx)
+	if _, err := io.Copy(w, f); err != nil {
+		return fmt.Errorf("failed to copy file to bucket: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("failed to close writer: %v", err)
 	}
 
 	return nil

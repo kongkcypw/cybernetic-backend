@@ -60,7 +60,7 @@ func main() {
 	router.POST("/socket.io/*any", gin.WrapH(socketServer))
 
 	// Register the routes
-	routes.UserRoutes(router)
+	routes.CharacterRoutes(router)
 	routes.AuthRoutes(router)
 	routes.TestRoute(router)
 

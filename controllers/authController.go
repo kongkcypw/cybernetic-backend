@@ -135,61 +135,34 @@ func Logout() gin.HandlerFunc {
 	}
 }
 
-func SignupWithGoogle() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var user models.User
-		user.Email = c.GetString("email")
-		user.Provider = "google"
-
-		// Check if email already exists
-		emailAlreadyExists := database.MysqlDB().Where("email = ?", user.Email).First(&user).Error
-		if emailAlreadyExists == nil {
-			c.JSON(400, gin.H{"error": "Email already exists"})
-			return
-
-		}
-
-		// Generate a unique user ID
-		for {
-			user.UserId = helper.GenerateUserId()
-			if err := database.MysqlDB().Where("userId = ?", user.UserId).First(&user).Error; err != nil {
-				break // No user found with this ID, so it's unique
-			}
-		}
-		// Save the user
-		dbErr := database.MysqlDB().Create(&user).Error
-		if dbErr != nil {
-			c.JSON(500, gin.H{"error": "Failed to signup"})
-			return
-		}
-
-		// Generate JWT token
-		authToken, _, generateTokenErr := helper.GenerateJWT(user.UserId, user.Email)
-		if generateTokenErr != nil {
-			c.JSON(500, gin.H{"error": generateTokenErr.Error()})
-			return
-		}
-
-		// Set token expiration
-		authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
-		// Config and set cookie
-		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_ENV"), false, true)
-
-		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email})
-	}
-}
-
 func LoginWithGoogle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
 		user.Email = c.GetString("email")
-		user.Provider = "google"
 
 		// Check if email exists
 		emailExists := database.MysqlDB().Where("email = ?", user.Email).First(&user).Error
+		if emailExists == nil {
+			if user.Provider != "google" {
+				c.JSON(400, gin.H{"error": "You have already signed up with this email using another provider. Please login with your email and password."})
+				return
+			}
+		}
 		if emailExists != nil {
-			c.JSON(400, gin.H{"error": "Email not found"})
-			return
+			user.Provider = "google"
+			// Generate a unique user ID
+			for {
+				user.UserId = helper.GenerateUserId()
+				if err := database.MysqlDB().Where("userId = ?", user.UserId).First(&user).Error; err != nil {
+					break // No user found with this ID, so it's unique
+				}
+			}
+			// Save the user
+			dbErr := database.MysqlDB().Create(&user).Error
+			if dbErr != nil {
+				c.JSON(500, gin.H{"error": "Failed to signup"})
+				return
+			}
 		}
 
 		// Generate JWT token

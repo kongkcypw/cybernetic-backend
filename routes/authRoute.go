@@ -12,6 +12,5 @@ func AuthRoutes(router *gin.Engine) {
 	router.POST("/auth/login", controllers.Login())
 	router.GET("/auth/logout", controllers.Logout())
 	// Google OAuth
-	router.GET("/auth/google/signup", middleware.GoogleCallback(), controllers.SignupWithGoogle())
 	router.GET("/auth/google/login", middleware.GoogleCallback(), controllers.LoginWithGoogle())
 }

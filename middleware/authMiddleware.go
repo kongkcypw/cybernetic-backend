@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,15 @@ func Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// Get the token from the header
-		token := c.Request.Header.Get("authToken")
+		token, err := c.Cookie("authToken")
+		if err != nil {
+			log.Println("Error getting token from cookie:", err)
+			c.JSON(401, gin.H{"error": "Error getting token from cookie"})
+			c.Abort()
+			return
+		}
+
+		log.Println("Token:", token)
 
 		if token == "" {
 			c.JSON(401, gin.H{"error": "Authorization token is required"})
@@ -24,8 +33,8 @@ func Authenticate() gin.HandlerFunc {
 		}
 
 		// Verify the token
-		claims, err := helper.VerifyToken(token)
-		if err != "" {
+		claims, errMsg := helper.VerifyToken(token)
+		if errMsg != "" {
 			c.JSON(401, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
