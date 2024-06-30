@@ -3,31 +3,37 @@ package main
 import (
 	database "example/backend/database"
 	routes "example/backend/routes"
+	"net/http"
 	"os"
 
 	"log"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-// MessageObject Basic chat message object
-type MessageObject struct {
-	Data  string `json:"data"`
-	From  string `json:"from"`
-	Event string `json:"event"`
-	To    string `json:"to"`
+func GinMiddleware(allowOrigin string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Content-Length, X-CSRF-Token, Token, session, Origin, Host, Connection, Accept-Encoding, Accept-Language, X-Requested-With")
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Request.Header.Del("Origin")
+
+		c.Next()
+	}
 }
 
 func main() {
 	// Load the .env file
 	err := godotenv.Load()
-
 	port := os.Getenv("PORT")
-
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -35,26 +41,31 @@ func main() {
 	// Initialize the database
 	database.InitMySQL()
 	database.InitMongoDB()
+	database.InitFirebase()
 
-	// Create a new Fiber app
-	app := fiber.New()
+	// Create a new Gin router
+	router := gin.New()
+	router.Use(gin.Logger())
+	router.Use(GinMiddleware("http://localhost:5173"))
 
-	// Use the logger middleware
-	app.Use(logger.New())
+	// Socket.io server
+	socketServer := routes.SocketServerRoute()
+	go func() {
+		if err := socketServer.Serve(); err != nil {
+			log.Fatalf("socketio listen error: %s\n", err)
+		}
+	}()
+	defer socketServer.Close()
+	router.GET("/socket.io/*any", gin.WrapH(socketServer))
+	router.POST("/socket.io/*any", gin.WrapH(socketServer))
 
-	// Initialize cors config
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://gofiber.io, https://gofiber.net, http://localhost:5173",
-		AllowHeaders:     "Origin, Content-Type, Accept",
-		AllowCredentials: true,
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
-	}))
+	// Register the routes
+	routes.CharacterRoutes(router)
+	routes.AuthRoutes(router)
+	routes.TestRoute(router)
 
-	// Define the routes
-	routes.UserRoutes(app)
-	routes.AuthRoutes(app)
-	routes.SocketRoute(app)
-
-	// Run the server
-	app.Listen(":" + port)
+	if err := router.Run(":" + port); // router.Run("localhost:" + port)
+	err != nil {
+		log.Fatal("failed run app: ", err)
+	}
 }

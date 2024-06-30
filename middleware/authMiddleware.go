@@ -2,34 +2,51 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
 	helper "example/backend/helpers"
 )
 
-func Authenticate(c *fiber.Ctx) error {
-	// Get the token from the header
-	token := c.Get("authToken")
-	if token == "" {
-		return c.Status(401).JSON(fiber.Map{"error": "Authorization token is required"})
+func Authenticate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		// Get the token from the header
+		token, err := c.Cookie("authToken")
+		if err != nil {
+			log.Println("Error getting token from cookie:", err)
+			c.JSON(401, gin.H{"error": "Error getting token from cookie"})
+			c.Abort()
+			return
+		}
+
+		log.Println("Token:", token)
+
+		if token == "" {
+			c.JSON(401, gin.H{"error": "Authorization token is required"})
+			c.Abort()
+			return
+		}
+
+		// Verify the token
+		claims, errMsg := helper.VerifyToken(token)
+		if errMsg != "" {
+			c.JSON(401, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		// Set the user ID in the context
+		c.Set("userId", claims.UserId)
+		c.Set("email", claims.Email)
+
+		// Continue the request if the token is valid
+		c.Next()
 	}
-
-	// Verify the token
-	claims, err := helper.VerifyToken(token)
-	if err != "" {
-		return c.Status(401).JSON(fiber.Map{"error": "Invalid token"})
-	}
-
-	// Set the user ID in the context
-	c.Locals("userId", claims.UserId)
-	c.Locals("email", claims.Email)
-
-	// Continue the request if the token is valid
-	return c.Next()
 }
 
 var googleOauthConfig = &oauth2.Config{
@@ -40,34 +57,43 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint:     google.Endpoint,
 }
 
-func GoogleCallback(c *fiber.Ctx) error {
-	fmt.Println("ClientID:", os.Getenv("GCP_CLIENT_ID"))
-	fmt.Println("ClientSecret:", os.Getenv("GCP_CLIENT_SECRET"))
-	fmt.Println("RedirectURL:", os.Getenv("GCP_OAUTH_REDIRECT_URL"))
-	fmt.Println("Endpoint:", google.Endpoint)
+func GoogleCallback() gin.HandlerFunc {
+	return func(c *gin.Context) {
 
-	code := c.Query("code")
-	fmt.Println("code:", code)
-	if code == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid code"})
+		fmt.Println("ClientID:", os.Getenv("GCP_CLIENT_ID"))
+		fmt.Println("ClientSecret:", os.Getenv("GCP_CLIENT_SECRET"))
+		fmt.Println("RedirectURL:", os.Getenv("GCP_OAUTH_REDIRECT_URL"))
+		fmt.Println("Endpoint:", google.Endpoint)
+
+		code := c.Query("code")
+		fmt.Println("code:", code)
+		if code == "" {
+			c.JSON(400, gin.H{"error": "Invalid code"})
+			c.Abort()
+			return
+		}
+
+		// Important
+		googleOauthConfig.ClientID = os.Getenv("GCP_CLIENT_ID")
+		googleOauthConfig.ClientSecret = os.Getenv("GCP_CLIENT_SECRET")
+		googleOauthConfig.RedirectURL = os.Getenv("GCP_OAUTH_REDIRECT_URL")
+
+		token, err := googleOauthConfig.Exchange(c.Request.Context(), code)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to exchange token", "details": err.Error()})
+			c.Abort()
+			return
+		}
+
+		userInfo, err := helper.GetUserInfoFromGoogleOauthToken(token.AccessToken)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to get user info"})
+			c.Abort()
+			return
+		}
+
+		// Set the email in the context
+		c.Set("email", userInfo.Email)
+		c.Next()
 	}
-
-	// Important
-	googleOauthConfig.ClientID = os.Getenv("GCP_CLIENT_ID")
-	googleOauthConfig.ClientSecret = os.Getenv("GCP_CLIENT_SECRET")
-	googleOauthConfig.RedirectURL = os.Getenv("GCP_OAUTH_REDIRECT_URL")
-
-	token, err := googleOauthConfig.Exchange(c.Context(), code)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to exchange token", "details": err.Error()})
-	}
-
-	userInfo, err := helper.GetUserInfoFromGoogleOauthToken(token.AccessToken)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to get user info"})
-	}
-
-	c.Locals("email", userInfo.Email)
-
-	return c.Next()
 }
