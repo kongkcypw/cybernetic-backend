@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"os"
 	"strings"
 
@@ -87,33 +88,31 @@ func GetFileFromBucket(bucketName, filePath, destPath string) error {
 	return nil
 }
 
-// UploadFileToBucket uploads a file to Firebase Storage
-func UploadFileToBucket(bucketName, srcPath, destPath string) error {
+// Upload From Client
+func UploadImageToFirebase(file multipart.File, filename string, destPath string) error {
 	ctx := context.Background()
 	client, err := FirebaseApp.Storage(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %v", err)
 	}
 
+	bucketName := os.Getenv("FIREBASE_STORAGE_BUCKET")
 	bucket, err := client.Bucket(bucketName)
 	if err != nil {
 		return fmt.Errorf("failed to get bucket: %v", err)
 	}
 
-	f, err := os.Open(srcPath)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %v", err)
-	}
-	defer f.Close()
+	storagePath := destPath + "/" + filename
+	object := bucket.Object(storagePath)
 
-	object := bucket.Object(destPath)
-	w := object.NewWriter(ctx)
-	if _, err := io.Copy(w, f); err != nil {
+	wc := object.NewWriter(ctx)
+	wc.ContentType = "image/png"
+
+	if _, err := io.Copy(wc, file); err != nil {
 		return fmt.Errorf("failed to copy file to bucket: %v", err)
 	}
-	if err := w.Close(); err != nil {
+	if err := wc.Close(); err != nil {
 		return fmt.Errorf("failed to close writer: %v", err)
 	}
-
 	return nil
 }

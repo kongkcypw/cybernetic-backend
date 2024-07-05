@@ -9,7 +9,7 @@ import (
 )
 
 type Player struct {
-	ID     string
+	UserId string
 	Name   string
 	Status string
 }
@@ -22,15 +22,18 @@ type ChatMessage struct {
 }
 
 type Room struct {
-	ID        string
-	Name      string
-	MapName   string
-	MaxPlayer float64
-	MinPlayer float64
-	Owner     string
-	Players   map[string]Player
-	Chat      []ChatMessage
-	mu        sync.Mutex
+	RoomId     string
+	Name       string
+	MapId      string
+	MapName    string
+	MapImage   string
+	Difficulty float64
+	MaxPlayer  float64
+	MinPlayer  float64
+	Owner      string
+	Players    map[string]Player
+	Chat       []ChatMessage
+	mu         sync.Mutex
 }
 
 var rooms = make(map[string]*Room)
@@ -49,7 +52,11 @@ func SocketServerRoute() *socketio.Server {
 
 		roomId := data["roomId"].(string)
 		roomName := data["roomName"].(string)
+
+		mapId := data["mapId"].(string)
 		mapName := data["mapName"].(string)
+		mapImage := data["mapImage"].(string)
+		difficulty := data["difficulty"].(float64) // Extract as float64 due to JSON number format
 
 		userId := data["userId"].(string)
 		characterName := data["characterName"].(string)
@@ -59,14 +66,17 @@ func SocketServerRoute() *socketio.Server {
 
 		roomsMu.Lock()
 		rooms[roomId] = &Room{
-			ID:        roomId,
-			Name:      roomName,
-			MapName:   mapName,
-			MaxPlayer: maxPlayer,
-			MinPlayer: minPlayer,
-			Owner:     userId,
+			RoomId:     roomId,
+			Name:       roomName,
+			MapId:      mapId,
+			MapName:    mapName,
+			MapImage:   mapImage,
+			Difficulty: difficulty,
+			MaxPlayer:  maxPlayer,
+			MinPlayer:  minPlayer,
+			Owner:      userId,
 			Players: map[string]Player{
-				userId: {ID: userId, Name: characterName, Status: "Not Ready"},
+				userId: {UserId: userId, Name: characterName, Status: "Not Ready"},
 			},
 			Chat: []ChatMessage{},
 		}
@@ -90,7 +100,7 @@ func SocketServerRoute() *socketio.Server {
 		if exists {
 			room.mu.Lock()
 			room.Players[userId] = Player{
-				ID:     userId,
+				UserId: userId,
 				Name:   characterName,
 				Status: "Not Ready"}
 			room.mu.Unlock()
@@ -101,12 +111,15 @@ func SocketServerRoute() *socketio.Server {
 			s.Join(roomId)
 			log.Printf("%s joined room: %s", userId, roomId)
 			server.BroadcastToRoom("/online_room", roomId, "room_detail", map[string]interface{}{
-				"id":        room.ID,
-				"name":      room.Name,
-				"mapName":   room.MapName,
-				"maxPlayer": room.MaxPlayer,
-				"minPlayer": room.MinPlayer,
-				"owner":     room.Owner,
+				"id":         room.RoomId,
+				"name":       room.Name,
+				"mapId":      room.MapId,
+				"mapName":    room.MapName,
+				"mapImage":   room.MapImage,
+				"difficulty": room.Difficulty,
+				"maxPlayer":  room.MaxPlayer,
+				"minPlayer":  room.MinPlayer,
+				"owner":      room.Owner,
 			})
 			server.BroadcastToRoom("/online_room", roomId, "update_players", map[string]interface{}{
 				"players": room.Players,
