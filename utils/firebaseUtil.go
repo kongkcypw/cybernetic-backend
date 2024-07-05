@@ -18,17 +18,6 @@ func DownloadImageFile(filePath, destPath string) error {
 	return nil
 }
 
-// UploadImageFile uploads an image file to Firebase Storage
-func UploadImageFile(srcPath, destPath string) error {
-	// Example: Upload a file to Firebase Storage
-	bucketName := os.Getenv("FIREBASE_STORAGE_BUCKET")
-	if err := database.UploadFileToBucket(bucketName, srcPath, destPath); err != nil {
-		log.Fatalf("failed to upload file to bucket: %v", err)
-		return err
-	}
-	return nil
-}
-
 func GetStorageFileURL(filePath string) (string, error) {
 	bucketName := os.Getenv("FIREBASE_STORAGE_BUCKET")
 	url := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, filePath)

@@ -63,6 +63,7 @@ func main() {
 	routes.CharacterRoutes(router)
 	routes.AuthRoutes(router)
 	routes.TestRoute(router)
+	routes.FirebaseRoutes(router)
 
 	if err := router.Run(":" + port); // router.Run("localhost:" + port)
 	err != nil {
