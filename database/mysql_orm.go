@@ -30,7 +30,7 @@ func InitMySQL() {
 	}
 
 	// Auto migrate the models (add more models here as needed)
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.UserAuth{})
 }
 
 // GetDB returns the database connection

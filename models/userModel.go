@@ -1,15 +1,13 @@
 package models
 
-// User represents the user model
-type User struct {
-	UserId   string `json:"userId" gorm:"column:userId;primaryKey"`
-	Email    string `json:"email" gorm:"column:email" validate:"required"`
-	Username string `json:"username" gorm:"column:username"`
-	Password string `json:"password" gorm:"column:password"`
-	Provider string `json:"provider" gorm:"column:provider"`
+// Character represents the character model
+type UserCharacter struct {
+	Id            string `bson:"_id" json:"id"`
+	UserId        string `json:"userId" validate:"required"`
+	CharacterName string `json:"characterName" validate:"required"`
 }
 
-type UserLogin struct {
-	Username string `json:"username" gorm:"column:username" validate:"required"`
-	Password string `json:"password" gorm:"column:password" validate:"required"`
+type UserGamePlayLevel struct {
+	UserId      string `json:"userId"`
+	LevelPlayed []int  `json:"levelPlayed"`
 }
