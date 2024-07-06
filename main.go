@@ -60,10 +60,11 @@ func main() {
 	router.POST("/socket.io/*any", gin.WrapH(socketServer))
 
 	// Register the routes
-	routes.CharacterRoutes(router)
 	routes.AuthRoutes(router)
-	routes.TestRoute(router)
+	routes.UserRoutes(router)
+	routes.GamePlayRoutes(router)
 	routes.FirebaseRoutes(router)
+	routes.TestRoute(router)
 
 	if err := router.Run(":" + port); // router.Run("localhost:" + port)
 	err != nil {

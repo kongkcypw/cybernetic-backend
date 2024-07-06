@@ -16,7 +16,7 @@ func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// Read the JSON body into a user struct
-		var user models.User
+		var user models.UserAuth
 		c.BindJSON(&user)
 
 		user.Provider = "custom"
@@ -97,7 +97,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		// Check if email exists
-		var user models.User
+		var user models.UserAuth
 		usernameExists := database.MysqlDB().Where("username = ?", userLogin.Username).First(&user).Error
 		if usernameExists != nil {
 			c.JSON(400, gin.H{"error": "Username not found"})
@@ -137,7 +137,7 @@ func Logout() gin.HandlerFunc {
 
 func LoginWithGoogle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var user models.User
+		var user models.UserAuth
 		user.Email = c.GetString("email")
 
 		// Check if email exists
