@@ -14,6 +14,7 @@ import (
 func GetCharacter() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.Query("userId")
+		log.Println("userId: ", userId)
 
 		if userId == "" {
 			c.JSON(400, gin.H{"error": "userId is required"})

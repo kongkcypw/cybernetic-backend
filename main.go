@@ -40,7 +40,6 @@ func main() {
 
 	// Initialize the database
 	database.InitMySQL()
-	database.InitMongoDB()
 	database.InitFirebase()
 
 	// Create a new Gin router

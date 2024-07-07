@@ -74,7 +74,7 @@ func Signup() gin.HandlerFunc {
 
 		// Set token expiration
 		authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
-		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_ENV"), false, true)
+		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)
 
 		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email})
 	}
@@ -120,8 +120,7 @@ func Login() gin.HandlerFunc {
 		// Set token expiration
 		authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
 		// Config and set cookie
-		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_ENV"), false, true)
-
+		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)
 		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email})
 	}
 }
@@ -129,7 +128,8 @@ func Login() gin.HandlerFunc {
 func Logout() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Clear the JWT token in the cookie
-		c.SetCookie("authToken", "", -1, "/", os.Getenv("SERVER_ENV"), false, true)
+		// c.SetCookie("authToken", "", -1, "/", os.Getenv("SERVER_ENV"), false, true)
+		c.SetCookie("authToken", "", -1, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)
 		c.JSON(200, gin.H{"message": "Logged out successfully"})
 
 	}
@@ -175,7 +175,11 @@ func LoginWithGoogle() gin.HandlerFunc {
 		// Set token expiration
 		authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
 		// Config and set cookie
-		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_ENV"), false, true)
+		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)
 		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email})
 	}
 }
+
+// net/http: invalid Cookie.Domain "http://localhost:3000"; dropping domain attribute
+// SetCookie: The domain is set to an empty string to ensure it works on localhost.
+// c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)

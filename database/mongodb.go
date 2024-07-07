@@ -4,22 +4,28 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
-	// "os"
-
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// var Client *mongo.Client
+
 func InitMongoDB() *mongo.Client {
 
-	// connectURL := os.Getenv("MONGODB_URL")
-	connectURL := "mongodb+srv://kongkcypw:8dpPoirdcLtDk0pX@cybernatic-cluster.2f0le4p.mongodb.net/?retryWrites=true&w=majority&appName=cybernatic-cluster"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	connectURL := os.Getenv("MONGODB_URL")
 	if connectURL == "" {
 		log.Fatal("MONGODB_URL environment variable is not set")
 	}
-	clientOptions := options.Client().ApplyURI(connectURL)
 
+	clientOptions := options.Client().ApplyURI(connectURL)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		fmt.Printf("Failed to connect to MongoDB: %v\n", err)
@@ -36,7 +42,6 @@ func InitMongoDB() *mongo.Client {
 	return client
 }
 
-// var client *mongo.Client = InitMongoDB()
 var Client *mongo.Client = InitMongoDB()
 
 func MongoDB() *mongo.Client {
