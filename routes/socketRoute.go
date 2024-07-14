@@ -128,7 +128,7 @@ func SocketServerRoute() *socketio.Server {
 			message := ChatMessage{
 				UserId: userId,
 				Name:   characterName,
-				Msg:    "เข้าร่วมห้อง",
+				Msg:    "join room",
 				Time:   time.Now().Format(time.RFC3339),
 			}
 			room.mu.Lock()
