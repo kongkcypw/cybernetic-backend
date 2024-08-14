@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
 )
@@ -107,12 +108,17 @@ func UploadImageToFirebase(file multipart.File, filename string, destPath string
 
 	wc := object.NewWriter(ctx)
 	wc.ContentType = "image/png"
+	wc.CacheControl = "no-store" // Prevent caching
 
 	if _, err := io.Copy(wc, file); err != nil {
 		return fmt.Errorf("failed to copy file to bucket: %v", err)
 	}
 	if err := wc.Close(); err != nil {
 		return fmt.Errorf("failed to close writer: %v", err)
+	}
+	// Set the file to be publicly accessible
+	if err := object.ACL().Set(ctx, storage.AllUsers, storage.RoleReader); err != nil {
+		return fmt.Errorf("failed to set object ACL: %v", err)
 	}
 	return nil
 }

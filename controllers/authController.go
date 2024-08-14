@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"os"
 	"strconv"
 
@@ -58,10 +59,27 @@ func Signup() gin.HandlerFunc {
 		}
 		user.Password = string(hashedPassword)
 
-		// Save the user
+		// Save the user to sql database
 		dbErr := database.MysqlDB().Create(&user).Error
 		if dbErr != nil {
 			c.JSON(500, gin.H{"error": "Failed to signup"})
+			return
+		}
+
+		// Save the user character to mongo database
+		var character models.UserCharacter
+		character.UserId = user.UserId
+		character.CharacterName = ""
+		character.HeighestLevel = 1
+		client := database.MongoDB()
+		if client == nil {
+			c.JSON(500, gin.H{"error": "Database connection is not initialized"})
+			return
+		}
+		collection := database.MongoDBOpenCollection(client, "cybernetic", "user_character")
+		_, mongodbErr := collection.InsertOne(context.Background(), character)
+		if mongodbErr != nil {
+			c.JSON(500, gin.H{"error": "Failed to create character", "details": mongodbErr.Error()})
 			return
 		}
 
@@ -76,7 +94,7 @@ func Signup() gin.HandlerFunc {
 		authTokenExpired, _ := strconv.Atoi(os.Getenv("JWT_AUTH_TOKEN_EXPIRED"))
 		c.SetCookie("authToken", authToken, authTokenExpired, "/", os.Getenv("SERVER_DOMAIN_FOR_COOKIE"), false, true)
 
-		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email})
+		c.JSON(200, gin.H{"userId": user.UserId, "email": user.Email, "characterName": character.CharacterName})
 	}
 }
 
@@ -161,6 +179,22 @@ func LoginWithGoogle() gin.HandlerFunc {
 			dbErr := database.MysqlDB().Create(&user).Error
 			if dbErr != nil {
 				c.JSON(500, gin.H{"error": "Failed to signup"})
+				return
+			}
+			// Save the user character to mongo database
+			var character models.UserCharacter
+			character.UserId = user.UserId
+			character.CharacterName = ""
+			character.HeighestLevel = 1
+			client := database.MongoDB()
+			if client == nil {
+				c.JSON(500, gin.H{"error": "Database connection is not initialized"})
+				return
+			}
+			collection := database.MongoDBOpenCollection(client, "cybernetic", "user_character")
+			_, mongodbErr := collection.InsertOne(context.Background(), character)
+			if mongodbErr != nil {
+				c.JSON(500, gin.H{"error": "Failed to create character", "details": mongodbErr.Error()})
 				return
 			}
 		}
