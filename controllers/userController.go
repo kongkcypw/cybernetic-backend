@@ -85,6 +85,51 @@ func UpdateCharacter() gin.HandlerFunc {
 	}
 }
 
+func UpdateHighestLevel() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var requestBody models.UserCharacter
+
+		// Parse the JSON body
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid request body", "details": err.Error()})
+			return
+		}
+
+		userId := requestBody.UserId
+		heighestLevel := requestBody.HeighestLevel
+
+		if userId == "" {
+			c.JSON(400, gin.H{"error": "userId is required"})
+			return
+		}
+
+		client := database.MongoDB()
+		if client == nil {
+			c.JSON(500, gin.H{"error": "Database connection is not initialized"})
+			return
+		}
+
+		collection := database.MongoDBOpenCollection(client, "cybernetic", "user_character")
+
+		filter := bson.M{"userId": userId}
+		update := bson.M{"$set": bson.M{"heighestLevel": heighestLevel}}
+
+		result, err := collection.UpdateOne(context.Background(), filter, update)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to update heighestLevel", "details": err.Error()})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(404, gin.H{"error": "Character not found"})
+			return
+		}
+
+		log.Printf("Updated heighestLevel for userId: %s\n", userId)
+		c.JSON(200, gin.H{"message": "HeighestLevel updated successfully"})
+	}
+}
+
 func GetCharacter() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.Query("userId")
